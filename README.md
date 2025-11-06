@@ -1,3 +1,3 @@
-# flutter_application_1
+# NANTA Mobile Project
 
-NANTA Mobile Project
+Mobile port of https://github.com/jooshwells/mern-group4
