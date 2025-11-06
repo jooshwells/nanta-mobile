@@ -1,4 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:io';
+import 'dart:async';
 
 void main() {
   runApp(const MyApp());
@@ -59,7 +64,29 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
-  void _sendRegistrationRequest() {
+  Future<http.Response> _postRequest (firstName, lastName, email, password, confirmPassword) async {
+    var url = 'https://aedogroupfour-lamp.xyz/api/auth/register';
+
+    Map data = {
+      'first_name' : firstName,
+      'last_name' : lastName,
+      'email' : email,
+      'password' : password,
+      'confirm_password' : confirmPassword
+    };
+    //encode Map to JSON
+    var body = json.encode(data);
+
+    var response = await http.post(Uri.http('aedogroupfour-lamp.xyz', '/api/auth/register'),
+        headers: {"Content-Type": "application/json"},
+        body: body
+    );
+    print("${response.statusCode}");
+    print("${response.body}");
+    return response;
+  }
+
+  void _sendRegistrationRequest() async {
     // Get the current text from the controller
     String firstName = _firstNameController.text;
     String lastName = _lastNameController.text;
@@ -67,13 +94,18 @@ class _MyHomePageState extends State<MyHomePage> {
     String password = _passwordController.text;
     String confirmPassword = _confirmPasswordController.text;
 
+    print("Am I running?");
+
+    final http.Response response = await _postRequest(firstName, lastName, email, password, confirmPassword);
+    int code = response.statusCode;
+    String message = response.body;
     // Show a simple pop-up dialog
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('Hello!'),
-          content: Text('{\nfirst_name: $firstName\nlast_name: $lastName\nemail: $email\npassword: $password\nconfirm_password: $confirmPassword\n}'),
+          content: Text('Response: ($code) - $message'),
           actions: [
             TextButton(
               onPressed: () {
