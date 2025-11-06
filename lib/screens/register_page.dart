@@ -4,9 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:async';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key, required this.title});
-
-  final String title;
+  const RegisterPage({super.key});
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -43,7 +41,6 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<http.Response> _postRequest (firstName, lastName, email, password, confirmPassword) async {
-    var url = 'https://aedogroupfour-lamp.xyz/api/auth/register';
 
     Map data = {
       'first_name' : firstName,
@@ -72,8 +69,6 @@ class _RegisterPageState extends State<RegisterPage> {
     String password = _passwordController.text;
     String confirmPassword = _confirmPasswordController.text;
 
-    print("Am I running?");
-
     final http.Response response = await _postRequest(firstName, lastName, email, password, confirmPassword);
     int code = response.statusCode;
     String message = response.body;
@@ -100,6 +95,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: Text('Sign Up for a New Account')),
       body: Padding( // Add padding around the content
         padding: const EdgeInsets.all(16.0), 
         child: Column(
