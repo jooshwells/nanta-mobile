@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/register_page.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'screens/home_page.dart';
 
 class MyApp extends StatelessWidget {
@@ -11,9 +11,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 58, 71, 183)),
+        textTheme: GoogleFonts.oswaldTextTheme(
+          Theme.of(context).textTheme,
+        )
       ),
-      home: const HomePage(title: 'API Demo'),
+      // It passes control to HomePage
+      home: const HomePage(title: 'API Demo'), 
     );
   }
 }

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
 import 'register_page.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class HomePage extends StatefulWidget{
   const HomePage({super.key, required this.title});
-
   final String title;
 
   @override
@@ -15,14 +15,27 @@ class _HomePageState extends State<HomePage>{
 
   @override
   Widget build(BuildContext context) {
+      final TextTheme textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text('NANTA: Not Another Note Taking App'),
-      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Text(
+              "N A N T A",
+              style: textTheme.headlineLarge?.copyWith(
+                fontSize: 80,
+                wordSpacing: 22,
+              )
+            ),
+            Text(
+              "Not Another Note Taking App",
+              style: textTheme.headlineMedium?.copyWith(
+                fontSize: 30,
+                wordSpacing: 10,
+              ),
+            ),
             ElevatedButton(
               onPressed: () {
                 Navigator.push(
@@ -30,7 +43,12 @@ class _HomePageState extends State<HomePage>{
                   MaterialPageRoute(builder: (context) => const LoginPage()),
                 );
               }, 
-              child: const Text('Login'),
+              child: Text(
+                'Login',
+                style: TextStyle(
+                  fontSize: 20,
+                ),
+              ),
             ),
             const SizedBox(
               height: 20
