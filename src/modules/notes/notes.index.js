@@ -1,0 +1,1 @@
+export { default as notes_routes } from "./notes.routes.js";

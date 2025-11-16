@@ -40,24 +40,30 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  Future<http.Response> _postRequest (firstName, lastName, email, password, confirmPassword) async {
-
+  Future<http.Response> _postRequest(
+    firstName,
+    lastName,
+    email,
+    password,
+    confirmPassword,
+  ) async {
     Map data = {
-      'first_name' : firstName,
-      'last_name' : lastName,
-      'email' : email,
-      'password' : password,
-      'confirm_password' : confirmPassword
+      'first_name': firstName,
+      'last_name': lastName,
+      'email': email,
+      'password': password,
+      'confirm_password': confirmPassword,
     };
     //encode Map to JSON
     var body = json.encode(data);
 
-    var response = await http.post(Uri.http('aedogroupfour-lamp.xyz', '/api/auth/register'),
-        headers: {"Content-Type": "application/json"},
-        body: body
+    var response = await http.post(
+      Uri.https('aedogroupfour-lamp.xyz', '/api/auth/register'),
+      headers: {"Content-Type": "application/json"},
+      body: body,
     );
     print("${response.statusCode}");
-    print("${response.body}");
+    print(response.body);
     return response;
   }
 
@@ -69,7 +75,13 @@ class _RegisterPageState extends State<RegisterPage> {
     String password = _passwordController.text;
     String confirmPassword = _confirmPasswordController.text;
 
-    final http.Response response = await _postRequest(firstName, lastName, email, password, confirmPassword);
+    final http.Response response = await _postRequest(
+      firstName,
+      lastName,
+      email,
+      password,
+      confirmPassword,
+    );
     int code = response.statusCode;
     String message = response.body;
     // Show a simple pop-up dialog
@@ -96,19 +108,14 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Sign Up for a New Account')),
-      body: Padding( // Add padding around the content
-        padding: const EdgeInsets.all(16.0), 
+      body: Padding(
+        // Add padding around the content
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            Text("Register your account", style: TextStyle(fontSize: 20.0)),
 
-            Text(
-              "Register your account",
-              style: TextStyle(
-                fontSize: 20.0
-              ),
-            ),
-            
             const SizedBox(height: 20),
 
             // STEP 4: Add the TextField widget
@@ -120,7 +127,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 hintText: 'Enter your first name',
               ),
             ),
-            
+
             // You can add space
             const SizedBox(height: 20),
 

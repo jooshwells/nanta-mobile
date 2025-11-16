@@ -1,0 +1,1 @@
+export { default as profile_routes } from "./profile.routes.js";

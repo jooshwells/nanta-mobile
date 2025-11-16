@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'login_page.dart';
 import 'register_page.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'profile_page.dart';
 
-class HomePage extends StatefulWidget{
+class HomePage extends StatefulWidget {
   const HomePage({super.key, required this.title});
   final String title;
 
@@ -12,8 +12,7 @@ class HomePage extends StatefulWidget{
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>{
-
+class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final TextTheme textTheme = Theme.of(context).textTheme;
@@ -22,7 +21,7 @@ class _HomePageState extends State<HomePage>{
 
     final SystemUiOverlayStyle overlayStyle = SystemUiOverlayStyle(
       // Set the status bar background color
-      statusBarColor: Colors.transparent, 
+      statusBarColor: Colors.transparent,
 
       // Set the status bar icon brightness
       // Brightness.light = Light icons (for dark backgrounds)
@@ -48,9 +47,7 @@ class _HomePageState extends State<HomePage>{
                   // color: Color.fromARGB(255, 255, 255, 255),
                 ),
               ),
-              const SizedBox(
-                height: 10,
-              ),
+              const SizedBox(height: 10),
               Text(
                 "Not Another Note Taking App",
                 style: textTheme.headlineMedium?.copyWith(
@@ -59,9 +56,7 @@ class _HomePageState extends State<HomePage>{
                   // color: Color.fromARGB(255, 255, 255, 255),
                 ),
               ),
-              const SizedBox(
-                height: 20,
-              ),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
@@ -77,19 +72,17 @@ class _HomePageState extends State<HomePage>{
                   ),
                 ),
               ),
-              const SizedBox(
-                height: 20
-              ),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const RegisterPage()),
+                    MaterialPageRoute(
+                      builder: (context) => const RegisterPage(),
+                    ),
                   );
                 },
-                style: ElevatedButton.styleFrom(
-                  fixedSize: const Size(125, 50),
-                ), 
+                style: ElevatedButton.styleFrom(fixedSize: const Size(125, 50)),
                 child: Text(
                   'Sign Up',
                   style: TextStyle(
@@ -98,9 +91,27 @@ class _HomePageState extends State<HomePage>{
                   ),
                 ),
               ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const Profilepage(),
+                    ),
+                  );
+                },
+                child: Text(
+                  'Profile(Testing)',
+                  style: TextStyle(
+                    fontSize: 20,
+                    // color: Color.fromARGB(255, 255, 255, 255),
+                  ),
+                ),
+              ),
             ],
-          )
-        )
+          ),
+        ),
       ),
     );
   }
