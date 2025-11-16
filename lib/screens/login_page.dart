@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'profile_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -34,6 +36,40 @@ class _LoginPageState extends State<LoginPage> {
     String password = _passwordController.text;
 
     final http.Response response = await _postRequest(email, password);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['token'] != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', data['token']);
+
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const Profilepage()),
+          );
+        }
+        return;
+      }
+    }
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Hello!'),
+          content: Text('Error logging in'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Closes the dialog
+              },
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+    /*
     int code = response.statusCode;
     String message = response.body;
     // Show a simple pop-up dialog
@@ -53,23 +89,21 @@ class _LoginPageState extends State<LoginPage> {
           ],
         );
       },
-    );
+    );*/
   }
 
   Future<http.Response> _postRequest(email, password) async {
-    Map data = {
-      'email' : email,
-      'password' : password,
-    };
+    Map data = {'email': email, 'password': password};
     //encode Map to JSON
     var body = json.encode(data);
-
-    var response = await http.post(Uri.http('aedogroupfour-lamp.xyz', '/api/auth/login'),
-        headers: {"Content-Type": "application/json"},
-        body: body
+    // Replace the first string with http://localhost:8080 for local testing and aedogroupfour-lamp.xyz regular
+    var response = await http.post(
+      Uri.https('aedogroupfour-lamp.xyz', '/api/auth/login'),
+      headers: {"Content-Type": "application/json"},
+      body: body,
     );
     print("${response.statusCode}");
-    print("${response.body}");
+    print(response.body);
     return response;
   }
 
@@ -77,19 +111,14 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Login to your Existing Account')),
-      body: Padding( // Add padding around the content
-        padding: const EdgeInsets.all(16.0), 
+      body: Padding(
+        // Add padding around the content
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            Text("Login", style: TextStyle(fontSize: 20.0)),
 
-            Text(
-              "Login",
-              style: TextStyle(
-                fontSize: 20.0
-              ),
-            ),
-            
             const SizedBox(height: 20),
 
             // STEP 4: Add the TextField widget
@@ -101,7 +130,7 @@ class _LoginPageState extends State<LoginPage> {
                 hintText: 'Enter your email',
               ),
             ),
-            
+
             // You can add space
             const SizedBox(height: 20),
 
@@ -122,7 +151,6 @@ class _LoginPageState extends State<LoginPage> {
         tooltip: 'Login',
         child: const Icon(Icons.send),
       ),
-
     );
   }
 }
