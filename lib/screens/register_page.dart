@@ -107,23 +107,31 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
   return Scaffold(
-    appBar: AppBar(title: const Text('')), // optional empty AppBar
+    appBar: AppBar(
+      title: const Text(
+        "NANTA",
+        style: TextStyle(
+          fontSize: 36, // adjust as needed
+          fontWeight: FontWeight.bold,
+          letterSpacing: 4,
+        ),
+      ),
+      centerTitle: true, 
+    ),
+
     body: Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center, // center horizontally
         children: <Widget>[
-          SizedBox(height: 20), // small space from top bar
+          const SizedBox(height: 100),
           Text(
-          "NANTA",
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 60, // make it bigger
-            fontWeight: FontWeight.bold, // optional bold
-            letterSpacing: 8, // optional spacing
-          ),
-        ),
-            
+            "Sign Up",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 38, 
+            ),
+          ),  
             const SizedBox(height: 20),
 
             // STEP 4: Add the TextField widget
