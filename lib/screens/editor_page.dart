@@ -4,152 +4,510 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nanta_mobile/screens/home_page.dart';
 import 'profile_page.dart';
 
 class NoteEditorPage extends StatefulWidget {
-  const NoteEditorPage({super.key});
+  final String? noteId;
+  final String? initialTitle;
+  final dynamic initialContent;
+
+  const NoteEditorPage({
+    super.key,
+    this.noteId,
+    this.initialTitle,
+    this.initialContent,
+  });
 
   @override
   State<NoteEditorPage> createState() => _NoteEditorPageState();
 }
 
 class _NoteEditorPageState extends State<NoteEditorPage> {
-  // --- State Variables (equivalent to useState) ---
   late final QuillController _controller;
+  final TextEditingController _titleController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
 
-  bool _noteOpen = false; // Maps to [noteOpen, setNoteOpen]
-  String _currentNoteId = "123"; // Mock ID. Set to "" to test the "Create a new note" UI
-  String _currentNoteTitle = "Untitled Note";
-  bool _saving = false;
+  String? _currentNoteId;
+  
+  // UI State
+  bool _isSaving = false;        
+  bool _showSuccess = false;     
+  Timer? _successTimer;
 
-  // --- Timer for Auto-Dismissing Alerts ---
-  Timer? _saveTimer;
+  List<dynamic> _sidebarNotes = [];
+  final String _baseUrl = 'aedogroupfour-lamp.xyz'; // Extracted for reuse
 
   @override
   void initState() {
     super.initState();
-    _controller = QuillController.basic();
-    // Initialize with mock content or fetch from API here
+    _currentNoteId = widget.noteId;
+    _titleController.text = widget.initialTitle ?? "Untitled Note";
+
+    _loadContent();
+    _fetchNotes();
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _titleController.dispose();
     _focusNode.dispose();
     _scrollController.dispose();
-    _saveTimer?.cancel();
+    _successTimer?.cancel();
     super.dispose();
   }
-Future<void> _handleLogout() async {
-  try {
-    var response = await http.post(
-      Uri.http('aedogroupfour-lamp.xyz', '/api/auth/user/logout'),
-      headers: {"Content-Type": "application/json"},
-    );
 
-    if (response.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Logged out successfully!')),
-      );
+  // --- Initialization Helpers ---
+
+  void _loadContent() {
+    if (widget.initialContent != null) {
+      try {
+        var contentJSON = widget.initialContent;
+        if (contentJSON is String) {
+          contentJSON = jsonDecode(contentJSON);
+        }
+        _controller = QuillController(
+          document: Document.fromJson(contentJSON),
+          selection: const TextSelection.collapsed(offset: 0),
+        );
+      } catch (e) {
+        debugPrint("Error parsing note content: $e");
+        _controller = QuillController.basic();
+      }
     } else {
-      debugPrint('Logout failed: ${response.body}');
+      _controller = QuillController.basic();
     }
-  } catch (e) {
-    debugPrint('Network error during logout: $e');
-  } finally {
-
-    if (!mounted) return;
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const HomePage(title: 'NANTA')),
-      (route) => false,
-    );
   }
-}
-  // --- API Handling (equivalent to handleSave) ---
-  Future<void> _handleSave() async {
-    if (_currentNoteId.isEmpty) return;
 
-    setState(() => _saving = true);
+  Future<String?> _getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('auth_token');
+  }
 
-    // Serialize Delta to JSON
-    final contentJson = jsonEncode(_controller.document.toDelta().toJson());
+  // --- CRUD Operations (Matching Web Implementation) ---
+
+  Future<void> _fetchNotes() async {
+    final token = await _getToken();
+    if (token == null) return;
 
     try {
-      // Equivalent to fetch(`/api/notes/${currentNoteId}`, method: 'PUT')
-      // Replace 'aedogroupfour-lamp.xyz' with your actual domain
-      final response = await http.put(
-        Uri.http('aedogroupfour-lamp.xyz', '/api/notes/$_currentNoteId'),
-        headers: {"Content-Type": "application/json; charset=UTF-8"},
-        body: jsonEncode({
-          'title': _currentNoteTitle,
-          'content': contentJson,
-        }),
+      final response = await http.get(
+        Uri.https(_baseUrl, '/api/notes/'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
       );
 
-      if (response.statusCode != 200) {
-        debugPrint('Error saving note: ${response.body}');
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> notes = data['notes'];
+
+        if (mounted) {
+          setState(() {
+            if (notes.isNotEmpty) {
+              _sidebarNotes = notes;
+            } else {
+              _sidebarNotes = [
+                {'title': "No notes created", '_id': "#", 'content': "{}"}
+              ];
+            }
+          });
+        }
       }
     } catch (e) {
-      debugPrint('Network error: $e');
+      debugPrint('Network error fetching notes: $e');
+    }
+  }
+
+  // Emulates createNote from web
+  Future<void> _createNote(String title) async {
+    final token = await _getToken();
+    if (token == null) return;
+
+    try {
+      await http.post(
+        Uri.https(_baseUrl, '/api/notes/create'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode({
+          'title': title,
+          // Web implementation sends empty ops structure
+          'content': jsonEncode({'ops': []}), 
+        }),
+      );
+      await _fetchNotes(); // Refresh list
+    } catch (e) {
+      debugPrint('Error creating note: $e');
+    }
+  }
+
+  // Emulates handleRenameNote from web
+  Future<void> _renameNote(String id, String newTitle, dynamic content) async {
+    final token = await _getToken();
+    if (token == null) return;
+
+    try {
+      await http.put(
+        Uri.https(_baseUrl, '/api/notes/$id'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode({
+          'title': newTitle,
+          'content': content, // Pass existing content
+        }),
+      );
+      await _fetchNotes();
+      
+      // If we renamed the currently open note, update the title in the AppBar
+      if (id == _currentNoteId) {
+        setState(() {
+          _titleController.text = newTitle;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error renaming note: $e');
+    }
+  }
+
+  // Emulates handleDeleteNote from web
+  Future<void> _deleteNote(String id) async {
+    final token = await _getToken();
+    if (token == null) return;
+
+    try {
+      // Optimistic UI update (optional, but matches web logic of filtering first)
+      setState(() {
+        _sidebarNotes.removeWhere((note) => note['_id'] == id);
+      });
+
+      await http.delete(
+        Uri.https(_baseUrl, '/api/notes/$id'),
+        headers: {
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (_currentNoteId == id) {
+        setState(() {
+          _currentNoteId = null;
+          _titleController.text = "Untitled Note";
+          _controller.clear();
+        });
+      }
+      
+      await _fetchNotes(); // Final refresh
+    } catch (e) {
+      debugPrint('Error deleting note: $e');
+    }
+  }
+
+  Future<void> _handleSave() async {
+    setState(() => _isSaving = true);
+
+    final token = await _getToken();
+    if (token == null) {
+      setState(() => _isSaving = false);
+      return;
     }
 
-    // Equivalent to setTimeout(() => setSaving(false), 1000)
-    _saveTimer?.cancel();
-    _saveTimer = Timer(const Duration(seconds: 1), () {
-      if (mounted) setState(() => _saving = false);
+    final contentJson = jsonEncode(_controller.document.toDelta().toJson());
+    final String title = _titleController.text.isEmpty
+        ? "Untitled Note"
+        : _titleController.text;
+
+    try {
+      http.Response response;
+
+      if (_currentNoteId == null) {
+        response = await http.post(
+          Uri.https(_baseUrl, '/api/notes/create'),
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $token"
+          },
+          body: jsonEncode({
+            'title': title,
+            'content': contentJson,
+          }),
+        );
+      } else {
+        response = await http.put(
+          Uri.https(_baseUrl, '/api/notes/$_currentNoteId'),
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $token"
+          },
+          body: jsonEncode({
+            'title': title,
+            'content': contentJson,
+          }),
+        );
+      }
+
+      if (response.statusCode == 200) {
+        _triggerSuccessAlert();
+        await _fetchNotes();
+
+        // If created, grab the ID of the newest note (index 0)
+        if (_currentNoteId == null && _sidebarNotes.isNotEmpty) {
+           final newestNote = _sidebarNotes[0];
+           if (newestNote['_id'] != "#") {
+             setState(() {
+               _currentNoteId = newestNote['_id'];
+             });
+           }
+        }
+      } 
+    } catch (e) {
+      debugPrint('Network error: $e');
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  void _triggerSuccessAlert() {
+    if (mounted) setState(() => _showSuccess = true);
+    _successTimer?.cancel();
+    _successTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _showSuccess = false);
     });
   }
 
+  Future<void> _handleLogout() async {
+    try {
+      final token = await _getToken();
+      if (token != null) {
+        await http.post(
+          Uri.https(_baseUrl, '/api/auth/logout'),
+          headers: {"Content-Type": "application/json", "Authorization": "Bearer $token"},
+        );
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('auth_token');
+      }
+    } catch (e) {
+      debugPrint('Logout Error: $e');
+    } finally {
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const HomePage(title: 'NANTA')),
+        (route) => false,
+      );
+    }
+  }
+
+  // --- Dialogs ---
+
+  Future<void> _showCreateNoteDialog() async {
+    String newTitle = "Note Title";
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Create new note'),
+          content: TextField(
+            onChanged: (value) => newTitle = value,
+            decoration: const InputDecoration(hintText: "Choose the title"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _createNote(newTitle);
+              },
+              child: const Text('Create'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showRenameDialog(String id, String currentTitle, dynamic content) async {
+    String updatedTitle = currentTitle;
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Rename Note'),
+          content: TextField(
+            controller: TextEditingController(text: currentTitle),
+            onChanged: (value) => updatedTitle = value,
+            decoration: const InputDecoration(hintText: "Enter new title"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _renameNote(id, updatedTitle, content);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // --- UI Construction ---
+
   @override
   Widget build(BuildContext context) {
-    // --- Keyboard Shortcuts (equivalent to useShortcut) ---
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyS, control: true): () => _handleSave(),
-        // Add Mac support (Cmd+S)
         const SingleActivator(LogicalKeyboardKey.keyS, meta: true): () => _handleSave(),
       },
       child: Focus(
         autofocus: true,
         child: Scaffold(
-          // --- Sidebar (equivalent to AppSidebar/SidebarProvider) ---
-          drawer: const Drawer(child: Center(child: Text("Sidebar Content"))), 
-          
-          // --- Header ---
-          appBar: AppBar(
-            leading: Builder(
-              builder: (context) => IconButton(
-                icon: const Icon(Icons.menu), // SidebarTrigger
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              ),
-            ),
-            title: Row(
+          // --- Functional Sidebar matching Web ---
+          drawer: Drawer(
+            child: Column(
               children: [
-                // Separator
-                Container(width: 1, height: 16, color: Colors.grey, margin: const EdgeInsets.symmetric(horizontal: 8)),
-                Text(_currentNoteTitle, style: const TextStyle(fontSize: 18)),
-                const Spacer(),
-                // Timer Component
-                // const _TimerWidget(), 
+                UserAccountsDrawerHeader(
+                  accountName: const Text(
+                    "My Notes",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  accountEmail: null,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color.fromARGB(255, 20, 71, 230)
+                        : const Color.fromARGB(255, 171, 199, 240),
+                  ),
+                ),
+                Expanded(
+                  child: _sidebarNotes.isEmpty
+                      ? const Center(child: CircularProgressIndicator())
+                      : ListView.builder(
+                          itemCount: _sidebarNotes.length,
+                          itemBuilder: (context, index) {
+                            final note = _sidebarNotes[index];
+                            final isPlaceholder = note['_id'] == "#";
+                            final isActive = note['_id'] == _currentNoteId;
+
+                            return ListTile(
+                              selected: isActive,
+                              selectedTileColor: isDark ? Colors.white10 : Colors.grey.shade200,
+                              leading: Icon(
+                                isPlaceholder
+                                    ? Icons.info_outline
+                                    : Icons.article_outlined,
+                              ),
+                              title: Text(
+                                note['title'] ?? "Untitled",
+                                style: TextStyle(
+                                  color: isPlaceholder ? Colors.grey : null,
+                                  fontStyle: isPlaceholder ? FontStyle.italic : null,
+                                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                                ),
+                              ),
+                              // Edit and Delete Actions
+                              trailing: isPlaceholder
+                                  ? null
+                                  : Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.edit, size: 20),
+                                          onPressed: () => _showRenameDialog(
+                                              note['_id'], note['title'], note['content']),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete, size: 20),
+                                          onPressed: () => _deleteNote(note['_id']),
+                                        ),
+                                      ],
+                                    ),
+                              onTap: isPlaceholder
+                                  ? null
+                                  : () {
+                                      Navigator.pop(context);
+                                      // Load Note logic without page replacement for smoother feel
+                                      setState(() {
+                                        _currentNoteId = note['_id'];
+                                        _titleController.text = note['title'];
+                                      });
+                                      // Re-parse content
+                                      if (note['content'] != null) {
+                                         try {
+                                            var contentJSON = note['content'];
+                                            if (contentJSON is String) {
+                                              contentJSON = jsonDecode(contentJSON);
+                                            }
+                                            _controller.document = Document.fromJson(contentJSON);
+                                         } catch (e) {
+                                            _controller.document = Document();
+                                         }
+                                      }
+                                    },
+                            );
+                          },
+                        ),
+                ),
+                const Divider(),
+                // "New Note" button at bottom
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.add),
+                      label: const Text("Create New Note"),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showCreateNoteDialog();
+                      },
+                    ),
+                  ),
+                ),
               ],
+            ),
+          ),
+          appBar: AppBar(
+            title: TextField(
+              controller: _titleController,
+              style: const TextStyle(color: Colors.white, fontSize: 20),
+              decoration: const InputDecoration(
+                hintText: "Title",
+                hintStyle: TextStyle(color: Colors.white70),
+                border: InputBorder.none,
+              ),
             ),
             actions: [
               IconButton(
-                // If saving, show a spinner. If not, show the Save icon.
-                icon: _saving 
+                icon: _isSaving
                     ? const SizedBox(
-                        width: 20, 
-                        height: 20, 
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Icon(Icons.save_outlined),
                 tooltip: 'Save Note',
-                // Disable the button if we are already saving
-                onPressed: _saving ? null : _handleSave, 
+                onPressed: _isSaving ? null : _handleSave,
               ),
         
               // profile button 
@@ -168,98 +526,72 @@ Future<void> _handleLogout() async {
               IconButton(
                 icon: const Icon(Icons.logout_outlined),
                 tooltip: 'Logout',
-                onPressed: () { _handleLogout();},
+                onPressed: _handleLogout,
               ),
               const SizedBox(width: 16),
             ],
           ),
-          
-          // --- Main Content (SidebarInset) ---
           body: Stack(
             alignment: Alignment.bottomCenter,
             children: [
               Column(
                 children: [
-                  // Toolbar
-                  if (_currentNoteId.isNotEmpty)
-                    QuillSimpleToolbar(
-                      controller: _controller,
-                      config: const QuillSimpleToolbarConfig(
-                        showFontFamily: false,
-                        showFontSize: false,
-                        showAlignmentButtons: false,
-                        showIndent: false,
-                        showInlineCode: false,
-                        showClearFormat: false,
-                        showListNumbers: false,
-                        showListBullets: false,
-                        showListCheck: false,
-                        showBackgroundColorButton: false,
-                        showColorButton: false,
-                        showSuperscript: false,
-                        showSubscript: false,
-                        showUnderLineButton: false,
-                        showUndo: false,
-                        showStrikeThrough: false,
-                        showCodeBlock: false,
-                        showLink: false,
-                        showQuote: false,
-                        showRedo: false,
+                  QuillSimpleToolbar(
+                    controller: _controller,
+                    config: const QuillSimpleToolbarConfig(
+                      showFontFamily: false,
+                      showFontSize: false,
+                      showSearchButton: false,
+                      showInlineCode: false,
+                      showSubscript: false,
+                      showSuperscript: false,
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: QuillEditor.basic(
+                        controller: _controller,
+                        focusNode: _focusNode,
+                        scrollController: _scrollController,
+                        config: const QuillEditorConfig(
+                          placeholder: 'Start writing...',
+                        ),
                       ),
                     ),
-                  
-                  // Editor Area
-                  Expanded(
-                    child: _currentNoteId.isEmpty
-                        ? const Center(
-                            child: Text(
-                              "Create a new note or edit an existing one to start editing.",
-                              style: TextStyle(fontSize: 18, color: Colors.grey),
-                              textAlign: TextAlign.center,
-                            ),
-                          )
-                        : Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: QuillEditor(
-                              controller: _controller,
-                              focusNode: _focusNode,
-                              scrollController: _scrollController,
-                              config: const QuillEditorConfig(
-                                placeholder: 'Start writing...',
-                              ),
-                            ),
-                          ),
                   ),
                 ],
               ),
-
-              // --- Saving Alert (Floating Overlay) ---
               AnimatedOpacity(
-                opacity: _saving ? 0.9 : 0.0,
+                opacity: _showSuccess ? 1.0 : 0.0, 
                 duration: const Duration(milliseconds: 300),
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 30),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
+                    color: theme.cardColor,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.grey.shade300),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withValues(alpha:0.1), blurRadius: 10, offset: const Offset(0, 4))
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      )
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.check_circle_outline, color: Colors.green),
-                      SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text("Success! Your changes have been saved", style: TextStyle(fontWeight: FontWeight.bold)),
-                          Text("Now get back to work!", style: TextStyle(fontSize: 12)),
-                        ],
+                      const Icon(Icons.check_circle, color: Colors.green),
+                      const SizedBox(width: 12),
+                      Text(
+                        "Saved!",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: theme.textTheme.bodyLarge?.color,
+                        ),
                       ),
                     ],
                   ),
@@ -269,23 +601,6 @@ Future<void> _handleLogout() async {
           ),
         ),
       ),
-    );
-  }
-}
-
-// --- Mock Timer Widget ---
-class _TimerWidget extends StatelessWidget {
-  const _TimerWidget();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: const Text("00:00:00", style: TextStyle(fontFamily: 'Monospace')),
     );
   }
 }
