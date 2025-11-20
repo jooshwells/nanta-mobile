@@ -219,7 +219,10 @@ class _EditAccount extends State<EditAccount> {
                     showEditPW = !showEditPW;
                   });
                 },
-                child: Text("Change PW"),
+                style: ElevatedButton.styleFrom(
+                  fixedSize: const Size(150, 50),
+                ),
+                child: Text("Change Password"),
               ),
               SizedBox(height: 20),
 

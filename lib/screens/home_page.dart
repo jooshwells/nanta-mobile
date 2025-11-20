@@ -82,25 +82,6 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(fontSize: 20),
                 ),
               ),
-              const SizedBox(height: 20),
-
-              // Editor Button (Moved inside the list)
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const NoteEditorPage()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  fixedSize: const Size(125, 50),
-                ),
-                child: const Text(
-                  'Editor',
-                  style: TextStyle(fontSize: 20),
-                ),
-              ),
             ], // <--- The Column children list ends HERE now
           ),
         ),

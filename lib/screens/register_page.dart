@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart'; // Import shared_preferences
+import 'editor_page.dart'; // Import the editor page
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -62,9 +63,65 @@ class _RegisterPageState extends State<RegisterPage> {
       headers: {"Content-Type": "application/json"},
       body: body,
     );
-    print("${response.statusCode}");
-    print(response.body);
+    // print("${response.statusCode}");
+    // print(response.body);
     return response;
+  }
+
+  // Helper to perform login immediately after registration
+  Future<void> _attemptAutoLogin(String email, String password) async {
+    try {
+      final loginResponse = await http.post(
+        Uri.https('aedogroupfour-lamp.xyz', '/api/auth/login'),
+        headers: {"Content-Type": "application/json"},
+        body: json.encode({'email': email, 'password': password}),
+      );
+
+      if (loginResponse.statusCode == 200) {
+        final data = json.decode(loginResponse.body);
+
+        if (data['token'] != null) {
+          // Save token
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('auth_token', data['token']);
+
+          // Redirect to Editor Page
+          if (mounted) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const NoteEditorPage()),
+              (route) => false, // Removes all previous routes (Login/Register)
+            );
+          }
+        }
+      } else {
+        // Registration succeeded, but auto-login failed
+        _showDialog('Registration successful, but auto-login failed. Please login manually.');
+      }
+    } catch (e) {
+      _showDialog('Registration successful, but a network error occurred during login.');
+    }
+  }
+
+  void _showDialog(String message) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Notification'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _sendRegistrationRequest() async {
@@ -82,127 +139,123 @@ class _RegisterPageState extends State<RegisterPage> {
       password,
       confirmPassword,
     );
-    int code = response.statusCode;
-    String message = response.body;
-    // Show a simple pop-up dialog
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Hello!'),
-          content: Text('Response: ($code) - $message'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Closes the dialog
-              },
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
+
+    // Check for success (200 OK or 201 Created)
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      // Registration Successful: Attempt to log in automatically
+      await _attemptAutoLogin(email, password);
+    } else {
+      // Registration Failed
+      int code = response.statusCode;
+      String message = response.body;
+      // Attempt to parse error message if it is JSON
+      try {
+         final msgJson = jsonDecode(message);
+         if(msgJson['message'] != null) message = msgJson['message'];
+         if(msgJson['errors'] != null) message = msgJson['errors'].toString();
+      } catch (_) {}
+
+      _showDialog('Error ($code): $message');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      title: const Text(
-        "NANTA",
-        style: TextStyle(
-          fontSize: 36, // adjust as needed
-          fontWeight: FontWeight.bold,
-          letterSpacing: 4,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          "NANTA",
+          style: TextStyle(
+            fontSize: 36, // adjust as needed
+            fontWeight: FontWeight.bold,
+            letterSpacing: 4,
+          ),
         ),
+        centerTitle: true,
       ),
-      centerTitle: true, 
-    ),
 
-    body: Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center, // center horizontally
-        children: <Widget>[
-          const SizedBox(height: 100),
-          Text(
-            "Sign Up",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 38, 
-            ),
-          ),  
-            const SizedBox(height: 20),
-
-            // STEP 4: Add the TextField widget
-            TextField(
-              controller: _firstNameController, // Attach the controller
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'First Name',
-                hintText: 'Enter your first name',
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView( // Added ScrollView to prevent overflow on small screens
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center, // center horizontally
+            children: <Widget>[
+              const SizedBox(height: 40), // Adjusted spacing
+              const Text(
+                "Sign Up",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 38,
+                ),
               ),
-            ),
+              const SizedBox(height: 20),
 
-            // You can add space
-            const SizedBox(height: 20),
-
-            TextField(
-              controller: _lastNameController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Last Name',
-                hintText: 'Enter your last name',
+              // STEP 4: Add the TextField widget
+              TextField(
+                controller: _firstNameController, // Attach the controller
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'First Name',
+                  hintText: 'Enter your first name',
+                ),
               ),
-            ),
 
-            const SizedBox(height: 20),
+              // You can add space
+              const SizedBox(height: 20),
 
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Email',
-                hintText: 'Enter your email',
+              TextField(
+                controller: _lastNameController,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Last Name',
+                  hintText: 'Enter your last name',
+                ),
               ),
-            ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Password',
-                hintText: 'Enter your password',
+              TextField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Email',
+                  hintText: 'Enter your email',
+                ),
               ),
-            ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            TextField(
-              controller: _confirmPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Confirm Password',
-                hintText: 'Enter your password again',
+              TextField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Password',
+                  hintText: 'Enter your password',
+                ),
               ),
-            ),
 
-            // (You can remove the counter Text widgets)
-            // const Text('You have pushed the button this many times:'),
-            // Text( ... ),
-          ],
+              const SizedBox(height: 20),
+
+              TextField(
+                controller: _confirmPasswordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Confirm Password',
+                  hintText: 'Enter your password again',
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _sendRegistrationRequest, // We will create this method next
+        onPressed: _sendRegistrationRequest,
         tooltip: 'Register',
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Theme.of(context).scaffoldBackgroundColor,
         child: const Icon(Icons.send),
-        backgroundColor: Theme.of(context).primaryColor,    
-        foregroundColor: Theme.of(context).scaffoldBackgroundColor,     
       ),
     );
   }
