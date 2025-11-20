@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'login_page.dart';
 import 'register_page.dart';
 import 'profile_page.dart';
+import 'editor_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, required this.title});
@@ -20,15 +21,8 @@ class _HomePageState extends State<HomePage> {
     final bool isDark = brightness == Brightness.dark;
 
     final SystemUiOverlayStyle overlayStyle = SystemUiOverlayStyle(
-      // Set the status bar background color
       statusBarColor: Colors.transparent,
-
-      // Set the status bar icon brightness
-      // Brightness.light = Light icons (for dark backgrounds)
-      // Brightness.dark = Dark icons (for light backgrounds)
       statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-
-      // For iOS (handles the notch area)
       statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
     );
 
@@ -42,21 +36,21 @@ class _HomePageState extends State<HomePage> {
               Text(
                 "N A N T A",
                 style: textTheme.headlineLarge?.copyWith(
-                  fontSize: 80,
-                  wordSpacing: 22,
-                  // color: Color.fromARGB(255, 255, 255, 255),
+                  fontSize: 100,
+                  wordSpacing: 2,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 30),
               Text(
                 "Not Another Note Taking App",
                 style: textTheme.headlineMedium?.copyWith(
-                  fontSize: 30,
+                  fontSize: 22,
                   wordSpacing: 10,
-                  // color: Color.fromARGB(255, 255, 255, 255),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 80),
+              
+              // Login Button
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
@@ -64,52 +58,50 @@ class _HomePageState extends State<HomePage> {
                     MaterialPageRoute(builder: (context) => const LoginPage()),
                   );
                 },
-                child: Text(
+                child: const Text(
                   'Login',
-                  style: TextStyle(
-                    fontSize: 20,
-                    // color: Color.fromARGB(255, 255, 255, 255),
-                  ),
+                  style: TextStyle(fontSize: 20),
                 ),
               ),
               const SizedBox(height: 20),
+
+              // Sign Up Button
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const RegisterPage(),
-                    ),
+                        builder: (context) => const RegisterPage()),
                   );
                 },
-                style: ElevatedButton.styleFrom(fixedSize: const Size(125, 50)),
-                child: Text(
+                style: ElevatedButton.styleFrom(
+                  fixedSize: const Size(125, 50),
+                ),
+                child: const Text(
                   'Sign Up',
-                  style: TextStyle(
-                    fontSize: 20,
-                    // color: Color.fromARGB(255, 255, 255, 255),
-                  ),
+                  style: TextStyle(fontSize: 20),
                 ),
               ),
               const SizedBox(height: 20),
+
+              // Editor Button (Moved inside the list)
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const Profilepage(),
-                    ),
+                        builder: (context) => const NoteEditorPage()),
                   );
                 },
-                child: Text(
-                  'Profile(Testing)',
-                  style: TextStyle(
-                    fontSize: 20,
-                    // color: Color.fromARGB(255, 255, 255, 255),
-                  ),
+                style: ElevatedButton.styleFrom(
+                  fixedSize: const Size(125, 50),
+                ),
+                child: const Text(
+                  'Editor',
+                  style: TextStyle(fontSize: 20),
                 ),
               ),
-            ],
+            ], // <--- The Column children list ends HERE now
           ),
         ),
       ),
