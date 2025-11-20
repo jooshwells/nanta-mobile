@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:http/http.dart' as http;
 import 'package:nanta_mobile/screens/home_page.dart';
+import 'profile_page.dart';
 
 class NoteEditorPage extends StatefulWidget {
   const NoteEditorPage({super.key});
@@ -151,6 +152,18 @@ Future<void> _handleLogout() async {
                 onPressed: _saving ? null : _handleSave, 
               ),
         
+              // profile button 
+              IconButton(
+                icon: const Icon(Icons.person_outline),
+                tooltip: 'Profile',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const Profilepage()),
+                  );
+                },
+              ),
+
               // logout button
               IconButton(
                 icon: const Icon(Icons.logout_outlined),

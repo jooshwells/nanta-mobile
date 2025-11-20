@@ -4,9 +4,9 @@ import 'package:nanta_mobile/screens/login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import './home_page.dart';
+import './editor_page.dart';
 import './pfp_components/profiletop.dart';
 import './pfp_components/editaccount.dart';
-import './note_editor_page.dart';
 
 class Profilepage extends StatelessWidget {
   const Profilepage({super.key});
@@ -42,7 +42,7 @@ class Profilepage extends StatelessWidget {
       if (context.mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LoginPage()),
+          MaterialPageRoute(builder: (context) => const HomePage(title: 'NANTA')),
         );
       }
     } catch (error) {

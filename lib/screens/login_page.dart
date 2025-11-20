@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'profile_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import './editor_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -46,7 +46,7 @@ class _LoginPageState extends State<LoginPage> {
         if (mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const Profilepage()),
+            MaterialPageRoute(builder: (context) => const NoteEditorPage()),
           );
         }
         return;
@@ -110,15 +110,31 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Login to your Existing Account')),
-      body: Padding(
-        // Add padding around the content
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text("Login", style: TextStyle(fontSize: 20.0)),
+    appBar: AppBar(
+      title: const Text(
+        "NANTA",
+        style: TextStyle(
+          fontSize: 36, // adjust as needed
+          fontWeight: FontWeight.bold,
+          letterSpacing: 4,
+        ),
+      ),
+      centerTitle: true, 
+    ),
 
+    body: Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center, // center horizontally
+        children: <Widget>[
+          const SizedBox(height: 100),
+          Text(
+            "Login",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 38, 
+            ),
+          ),  
             const SizedBox(height: 20),
 
             // STEP 4: Add the TextField widget
