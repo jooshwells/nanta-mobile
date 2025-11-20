@@ -136,6 +136,7 @@ class _LoginPageState extends State<LoginPage> {
 
             TextField(
               controller: _passwordController,
+              obscureText: true,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 labelText: 'Password',
@@ -149,6 +150,8 @@ class _LoginPageState extends State<LoginPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: _sendLoginRequest, // We will create this method next
         tooltip: 'Login',
+        backgroundColor: Theme.of(context).primaryColor,    
+        foregroundColor: Theme.of(context).scaffoldBackgroundColor,     
         child: const Icon(Icons.send),
       ),
     );

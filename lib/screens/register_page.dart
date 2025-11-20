@@ -106,16 +106,24 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Sign Up for a New Account')),
-      body: Padding(
-        // Add padding around the content
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text("Register your account", style: TextStyle(fontSize: 20.0)),
-
+  return Scaffold(
+    appBar: AppBar(title: const Text('')), // optional empty AppBar
+    body: Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center, // center horizontally
+        children: <Widget>[
+          SizedBox(height: 20), // small space from top bar
+          Text(
+          "NANTA",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 60, // make it bigger
+            fontWeight: FontWeight.bold, // optional bold
+            letterSpacing: 8, // optional spacing
+          ),
+        ),
+            
             const SizedBox(height: 20),
 
             // STEP 4: Add the TextField widget
@@ -155,6 +163,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
             TextField(
               controller: _passwordController,
+              obscureText: true,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 labelText: 'Password',
@@ -166,6 +175,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
             TextField(
               controller: _confirmPasswordController,
+              obscureText: true,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 labelText: 'Confirm Password',
@@ -183,6 +193,8 @@ class _RegisterPageState extends State<RegisterPage> {
         onPressed: _sendRegistrationRequest, // We will create this method next
         tooltip: 'Register',
         child: const Icon(Icons.send),
+        backgroundColor: Theme.of(context).primaryColor,    
+        foregroundColor: Theme.of(context).scaffoldBackgroundColor,     
       ),
     );
   }
