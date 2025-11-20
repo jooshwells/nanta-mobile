@@ -7,6 +7,7 @@ import './home_page.dart';
 import './editor_page.dart';
 import './pfp_components/profiletop.dart';
 import './pfp_components/editaccount.dart';
+import './editor_page.dart';
 
 class Profilepage extends StatelessWidget {
   const Profilepage({super.key});
